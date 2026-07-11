@@ -18,6 +18,10 @@ const envSchema = z.object({
   JWT_REFRESH_EXPIRES_IN: z.string().min(1),
 
   BCRYPT_SALT_ROUNDS: z.coerce.number().int().positive(),
+
+  STRIPE_SECRET_KEY: z.string().min(1).optional().default(""),
+  STRIPE_SUCCESS_URL: z.string().url().optional().default("http://localhost:3000/payment/success"),
+  STRIPE_CANCEL_URL: z.string().url().optional().default("http://localhost:3000/payment/cancel"),
 });
 
 export const env = envSchema.parse(process.env);

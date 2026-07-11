@@ -2,8 +2,10 @@
 import { StatusCodes } from "http-status-codes";
 
 import { CustomError } from "../../ExceptionHandler/CustomError.js";
+import { getStripeClient } from "../../lib/stripe.js";
 import { prisma } from "../../lib/prisma.js";
-import { PaymentStatus, RentalStatus } from "../../../generated/prisma/enums.js";
+import { PaymentProvider, PaymentStatus, RentalStatus } from "../../../generated/prisma/enums.js";
+import { env } from "../../config/env.js";
 
 const createPayment = async (
   customerId: string,
@@ -26,6 +28,13 @@ const createPayment = async (
     );
   }
 
+  if (payload.provider !== "STRIPE") {
+    throw new CustomError(
+      StatusCodes.BAD_REQUEST,
+      "Only Stripe payments are currently supported"
+    );
+  }
+
   const existingPayment =
     await prisma.payment.findFirst({
       where: {
@@ -40,16 +49,66 @@ const createPayment = async (
     );
   }
 
-  return prisma.payment.create({
+  const customer = await prisma.user.findUnique({
+    where: { id: customerId },
+    select: { email: true },
+  });
+
+  const payment = await prisma.payment.create({
     data: {
       rentalOrderId: rental.id,
       customerId,
       transactionId: "pending",
       amount: rental.totalAmount,
-      provider: payload.provider as any,
+      provider: PaymentProvider.STRIPE,
       status: PaymentStatus.PENDING,
     },
   });
+
+  try {
+    const stripe = getStripeClient();
+    const amountInCents = Math.round(Number(rental.totalAmount) * 100);
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+      customer_email: customer?.email ?? undefined,
+      success_url: `${env.STRIPE_SUCCESS_URL}?payment_id=${payment.id}`,
+      cancel_url: `${env.STRIPE_CANCEL_URL}?payment_id=${payment.id}`,
+      client_reference_id: payment.id,
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: `GearUp rental order ${payment.id}`,
+            },
+            unit_amount: amountInCents,
+          },
+        },
+      ],
+      metadata: {
+        paymentId: payment.id,
+      },
+    });
+
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { transactionId: session.id },
+    });
+
+    return {
+      paymentId: payment.id,
+      sessionId: session.id,
+      checkoutUrl: session.url,
+      amount: Number(rental.totalAmount),
+      provider: "STRIPE",
+    };
+  } catch (error) {
+    await prisma.payment.delete({ where: { id: payment.id } });
+    throw error;
+  }
 };
 
 const confirmPayment = async (
@@ -93,6 +152,16 @@ const confirmPayment = async (
     throw new CustomError(
       StatusCodes.BAD_REQUEST,
       "Payment already completed"
+    );
+  }
+
+  const stripe = getStripeClient();
+  const session = await stripe.checkout.sessions.retrieve(payload.transactionId);
+
+  if (session.payment_status !== "paid" || session.status !== "complete") {
+    throw new CustomError(
+      StatusCodes.BAD_REQUEST,
+      "Payment is not completed yet"
     );
   }
 

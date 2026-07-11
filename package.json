@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "seed:admin": "tsx src/seed/admin.seed.ts"
   },
   "keywords": [],
   "author": "",
@@ -38,6 +39,7 @@
     "http-status-codes": "^2.3.0",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.22.0",
+    "stripe": "^22.3.1",
     "zod": "^4.4.3"
   }
 }
