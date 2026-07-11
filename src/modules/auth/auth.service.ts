@@ -7,29 +7,41 @@ import { CustomError } from "../../ExceptionHandler/CustomError.js";
 import { StatusCodes } from "http-status-codes";
 import { env } from '../../config/env.js';
 import { Role } from "../../../generated/prisma/enums.js";
+import { User } from "../../../generated/prisma/client.js";
 
 const isValidRole = (role: unknown): role is Role => {
   return role === Role.CUSTOMER || role === Role.PROVIDER || role === Role.ADMIN;
 };
 
 const loginUser = async (payload: ILoginUser) => {
+
+
+  if (!payload || typeof payload !== "object") {
+    throw new CustomError(StatusCodes.BAD_REQUEST, "Login payload is required");
+  }
+
   const { email, password } = payload;
 
-  const user = await prisma.user.findUniqueOrThrow({
+  if (!email || !password) {
+    throw new CustomError(StatusCodes.BAD_REQUEST, "Email and password are required");
+  }
+
+  const user: User = await prisma.user.findUniqueOrThrow({
     where: { email }
   })
 
   const isPasswordMatched = await bcrypt.compare(password, user.password);
 
   if (!isPasswordMatched) {
-    throw new Error("Password is incorrect");
+    throw new CustomError(StatusCodes.UNAUTHORIZED, "Password is incorrect");
   }
 
   const jwtPayload = {
     id: user.id,
     name: user.name,
     email: user.email,
-    role: user.role
+    role: user.role,
+    status: user.status,
   }
 
   const accessToken = jwtUtils.createToken(
@@ -69,7 +81,8 @@ const refreshToken = async (refreshToken: string) => {
     id,
     name: user.name,
     email: user.email,
-    role: user.role
+    role: user.role,
+    status: user.status,
   }
 
 
@@ -109,21 +122,47 @@ const registerUser = async (payload: IRegisterUser) => {
 
   return {
     user,
-    token: jwtUtils.createToken(
+    access_token: jwtUtils.createToken(
       {
         id: user.id,
         email: user.email,
         role: user.role,
+        status: user.status,
       },
       env.JWT_ACCESS_SECRET,
       jwtExpiresIn as SignOptions,
-    )
+    ),
+    refresh_token: jwtUtils.createToken(
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+      },
+      env.JWT_REFRESH_SECRET,
+      env.JWT_REFRESH_EXPIRES_IN as SignOptions,
+    ),
   };
 };
 
+const getMe = async (userId: string) => {
+  return await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      address: true,
+      role: true,
+      status: true,
+    }
+  })
+}
 
 export const authService = {
   loginUser,
   refreshToken,
   registerUser,
+  getMe
 }
