@@ -3,7 +3,8 @@ import { z } from "zod";
 
 export const createGearSchema = z.object({
   body: z.object({
-    categoryId: z.string().uuid(),
+    categoryId: z.string().uuid().optional(),
+    category: z.string().uuid().optional(),
 
     name: z
       .string()
@@ -23,7 +24,7 @@ export const createGearSchema = z.object({
       .min(2)
       .max(100),
 
-    dailyRate: z.number().positive(),
+    pricePerDay: z.number().positive(),
 
     stock: z.number().int().min(0),
 
@@ -34,6 +35,7 @@ export const createGearSchema = z.object({
 export const updateGearSchema = z.object({
   body: z.object({
     categoryId: z.string().uuid().optional(),
+    category: z.string().uuid().optional(),
 
     name: z
       .string()
@@ -56,7 +58,7 @@ export const updateGearSchema = z.object({
       .max(100)
       .optional(),
 
-    dailyRate: z.number().positive().optional(),
+    pricePerDay: z.number().positive().optional(),
 
     stock: z.number().int().min(0).optional(),
 

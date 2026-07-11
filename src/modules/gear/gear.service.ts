@@ -7,29 +7,57 @@ import { prisma } from "../../lib/prisma.js";
 
 const createGear = async (
   providerId: string,
-  payload: Prisma.GearItemCreateInput
+  payload: {
+    categoryId?: string;
+    category?: string;
+    name: string;
+    description: string;
+    brand: string;
+    pricePerDay: number;
+    stock: number;
+    imageUrl?: string;
+  }
 ) => {
-  const category = await prisma.category.findUnique({
-    where: {
-      id: payload.category.connect?.id,
-    },
-  });
+  const categoryId = payload.categoryId ?? payload.category;
+  let categoryConnect;
 
-  if (!category) {
-    throw new CustomError(
-      StatusCodes.NOT_FOUND,
-      "Category not found"
-    );
+  if (categoryId) {
+    const category = await prisma.category.findUnique({
+      where: {
+        id: categoryId,
+      },
+    });
+
+    if (!category) {
+      throw new CustomError(
+        StatusCodes.NOT_FOUND,
+        "Category not found"
+      );
+    }
+
+    categoryConnect = {
+      category: {
+        connect: {
+          id: categoryId,
+        },
+      },
+    };
   }
 
   return prisma.gearItem.create({
     data: {
-      ...payload,
+      name: payload.name,
+      description: payload.description,
+      brand: payload.brand,
+      pricePerDay: payload.pricePerDay,
+      stockQuantity: payload.stock,
+      images: payload.imageUrl ? [payload.imageUrl] : [],
       provider: {
         connect: {
           id: providerId,
         },
       },
+      ...categoryConnect,
     },
     include: {
       category: true,
@@ -92,7 +120,16 @@ const getGearById = async (id: string) => {
 const updateGear = async (
   id: string,
   providerId: string,
-  payload: Prisma.GearItemUpdateInput
+  payload: {
+    categoryId?: string;
+    category?: string;
+    name?: string;
+    description?: string;
+    brand?: string;
+    pricePerDay?: number;
+    stock?: number;
+    imageUrl?: string;
+  }
 ) => {
   const gear = await prisma.gearItem.findUnique({
     where: { id },
@@ -112,9 +149,44 @@ const updateGear = async (
     );
   }
 
+  const updateData: Prisma.GearItemUpdateInput = {};
+  const categoryId = payload.categoryId ?? payload.category;
+
+  if (categoryId) {
+    updateData.category = {
+      connect: {
+        id: categoryId,
+      },
+    };
+  }
+
+  if (payload.name !== undefined) {
+    updateData.name = payload.name;
+  }
+
+  if (payload.description !== undefined) {
+    updateData.description = payload.description;
+  }
+
+  if (payload.brand !== undefined) {
+    updateData.brand = payload.brand;
+  }
+
+  if (payload.pricePerDay !== undefined) {
+    updateData.pricePerDay = payload.pricePerDay;
+  }
+
+  if (payload.stock !== undefined) {
+    updateData.stockQuantity = payload.stock;
+  }
+
+  if (payload.imageUrl !== undefined) {
+    updateData.images = [payload.imageUrl];
+  }
+
   return prisma.gearItem.update({
     where: { id },
-    data: payload,
+    data: updateData,
     include: {
       category: true,
     },

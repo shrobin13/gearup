@@ -312,9 +312,9 @@ export type CategoryMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
-export type CategoryScalarRelationFilter = {
-  is?: Prisma.CategoryWhereInput
-  isNot?: Prisma.CategoryWhereInput
+export type CategoryNullableScalarRelationFilter = {
+  is?: Prisma.CategoryWhereInput | null
+  isNot?: Prisma.CategoryWhereInput | null
 }
 
 export type StringFieldUpdateOperationsInput = {
@@ -335,10 +335,12 @@ export type CategoryCreateNestedOneWithoutGearItemsInput = {
   connect?: Prisma.CategoryWhereUniqueInput
 }
 
-export type CategoryUpdateOneRequiredWithoutGearItemsNestedInput = {
+export type CategoryUpdateOneWithoutGearItemsNestedInput = {
   create?: Prisma.XOR<Prisma.CategoryCreateWithoutGearItemsInput, Prisma.CategoryUncheckedCreateWithoutGearItemsInput>
   connectOrCreate?: Prisma.CategoryCreateOrConnectWithoutGearItemsInput
   upsert?: Prisma.CategoryUpsertWithoutGearItemsInput
+  disconnect?: Prisma.CategoryWhereInput | boolean
+  delete?: Prisma.CategoryWhereInput | boolean
   connect?: Prisma.CategoryWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.CategoryUpdateToOneWithWhereWithoutGearItemsInput, Prisma.CategoryUpdateWithoutGearItemsInput>, Prisma.CategoryUncheckedUpdateWithoutGearItemsInput>
 }
