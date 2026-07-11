@@ -1,8 +1,9 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import { catchAsync } from "../../utils/catchAsync.js";
 import { authService } from "./auth.service.js";
 import sendResponse from "../../utils/sendResponse.js";
 import { StatusCodes } from "http-status-codes";
+import { CustomError } from "../../ExceptionHandler/CustomError.js";
 
 const setAuthCookies = (res: Response, accessToken: string, refreshToken?: string) => {
   const cookieOptions = {
@@ -24,7 +25,7 @@ const setAuthCookies = (res: Response, accessToken: string, refreshToken?: strin
   }
 };
 
-const loginUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+const loginUser = catchAsync(async (req: Request, res: Response) => {
   const result = await authService.loginUser(req.body);
 
   setAuthCookies(res, result.accessToken, result.refreshToken);
@@ -37,11 +38,10 @@ const loginUser = catchAsync(async (req: Request, res: Response, next: NextFunct
   });
 });
 
-
-const registerUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+const registerUser = catchAsync(async (req: Request, res: Response) => {
   const result = await authService.registerUser(req.body);
 
-  setAuthCookies(res, result.access_token, result.refresh_token);
+  setAuthCookies(res, result.accessToken, result.refreshToken);
 
   sendResponse(res, {
     statusCode: StatusCodes.CREATED,
@@ -51,12 +51,9 @@ const registerUser = catchAsync(async (req: Request, res: Response, next: NextFu
   });
 });
 
-const me = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+const me = catchAsync(async (req: Request, res: Response) => {
   if (!req.user) {
-    return res.status(StatusCodes.UNAUTHORIZED).json({
-      success: false,
-      message: "Unauthorized",
-    });
+    throw new CustomError(StatusCodes.UNAUTHORIZED, "Unauthorized");
   }
 
   const result = await authService.getMe(req.user.id);
@@ -69,24 +66,8 @@ const me = catchAsync(async (req: Request, res: Response, next: NextFunction) =>
   });
 });
 
-const refreshToken = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(StatusCodes.UNAUTHORIZED).json({
-      success: false,
-      message: "Authorization header is missing or invalid",
-    });
-  }
-
-  const refreshToken = authHeader.split(" ")[1];
-  if (!refreshToken) {
-    return res.status(StatusCodes.UNAUTHORIZED).json({
-      success: false,
-      message: "Refresh token is missing",
-    });
-  }
-
-  const result = await authService.refreshToken(refreshToken);
+const refreshToken = catchAsync(async (req: Request, res: Response) => {
+  const result = await authService.refreshToken(req.body.refreshToken);
 
   res.cookie("accessToken", result.accessToken, {
     httpOnly: true,
@@ -108,5 +89,5 @@ export const authController = {
   registerUser,
   refreshToken,
   me,
-}
+};
 
