@@ -16,6 +16,34 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+app.get("/payment/success", (req: Request, res: Response) => {
+  const paymentId = typeof req.query.payment_id === "string" ? req.query.payment_id : "";
+
+  res.status(200).json({
+    statusCode: 200,
+    success: true,
+    message: "Payment completed successfully",
+    data: {
+      paymentId,
+      status: "success",
+    },
+  });
+});
+
+app.get("/payment/cancel", (req: Request, res: Response) => {
+  const paymentId = typeof req.query.payment_id === "string" ? req.query.payment_id : "";
+
+  res.status(200).json({
+    statusCode: 200,
+    success: false,
+    message: "Payment cancelled",
+    data: {
+      paymentId,
+      status: "cancelled",
+    },
+  });
+});
+
 app.get("/", (req: Request, res: Response) => {
   res.send("Welcome to gearup!");
 });
