@@ -1,35 +1,26 @@
 import { Router } from "express";
 
+import { providerOrderController } from "./provider.controller.js";
 
 import guard from "../../middlewares/guard.js";
 import validateRequest from "../../middlewares/validateRequest.js";
-import { gearValidation } from "../gear/gear.validation.js";
-import { gearController } from "../gear/gear.controller.js";
+import { providerOrderValidation } from "./provider.validation.js";
 
 const router = Router();
 
-router.post(
+router.get(
   "/",
   guard("PROVIDER"),
-  validateRequest(
-    gearValidation.createGearSchema
-  ),
-  gearController.createGear
+  providerOrderController.getProviderOrders
 );
 
-router.put(
+router.patch(
   "/:id",
   guard("PROVIDER"),
   validateRequest(
-    gearValidation.updateGearSchema
+    providerOrderValidation.updateOrderStatusSchema
   ),
-  gearController.updateGear
+  providerOrderController.updateOrderStatus
 );
 
-router.delete(
-  "/:id",
-  guard("PROVIDER"),
-  gearController.deleteGear
-);
-
-export const providerGearRoutes = router;
+export const providerOrderRoutes = router;
