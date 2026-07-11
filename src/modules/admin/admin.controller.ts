@@ -19,18 +19,18 @@ const getAllUsers = catchAsync(
   }
 );
 
-const updateUserStatus = catchAsync(
+const updateUser = catchAsync(
   async (req: Request, res: Response) => {
     const result =
-      await adminService.updateUserStatus(
+      await adminService.updateUser(
         req.params.id as string,
-        req.body.status
+        req.body
       );
 
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
-      message: "User status updated successfully",
+      message: "User updated successfully",
       data: result,
     });
   }
@@ -65,7 +65,7 @@ const getAllRentals = catchAsync(
 
 export const adminController = {
   getAllUsers,
-  updateUserStatus,
+  updateUser,
   getAllGear,
   getAllRentals,
 };

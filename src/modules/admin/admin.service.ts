@@ -3,6 +3,7 @@ import { StatusCodes } from "http-status-codes";
 
 import { CustomError } from "../../ExceptionHandler/CustomError.js";
 import { prisma } from "../../lib/prisma.js";
+import { Role, UserStatus } from "../../../generated/prisma/enums.js";
 
 const getAllUsers = async () => {
   return prisma.user.findMany({
@@ -20,9 +21,12 @@ const getAllUsers = async () => {
   });
 };
 
-const updateUserStatus = async (
+const updateUser = async (
   userId: string,
-  status: string
+  data: {
+    role?: Role;
+    status?: UserStatus;
+  }
 ) => {
   const user = await prisma.user.findUnique({
     where: {
@@ -37,13 +41,24 @@ const updateUserStatus = async (
     );
   }
 
+  const updateData: {
+    role?: Role;
+    status?: UserStatus;
+  } = {};
+
+  if (data.role !== undefined) {
+    updateData.role = data.role;
+  }
+
+  if (data.status !== undefined) {
+    updateData.status = data.status;
+  }
+
   return prisma.user.update({
     where: {
       id: userId,
     },
-    data: {
-      status: status as any,
-    },
+    data: updateData,
     select: {
       id: true,
       name: true,
@@ -97,7 +112,7 @@ const getAllRentals = async () => {
 
 export const adminService = {
   getAllUsers,
-  updateUserStatus,
+  updateUser,
   getAllGear,
   getAllRentals,
 };

@@ -21,9 +21,9 @@ router.patch(
   authMiddleware,
   guard("ADMIN"),
   validateRequest(
-    adminValidation.updateUserStatusSchema
+    adminValidation.updateUserSchema
   ),
-  adminController.updateUserStatus
+  adminController.updateUser
 );
 
 router.get(
