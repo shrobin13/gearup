@@ -7,6 +7,47 @@ import { prisma } from "../../lib/prisma.js";
 import { PaymentProvider, PaymentStatus, RentalStatus } from "../../../generated/prisma/enums.js";
 import { env } from "../../config/env.js";
 
+const finalizePayment = async (
+  paymentId: string,
+  transactionId: string
+) => {
+  return prisma.$transaction(async (tx) => {
+    const payment = await tx.payment.findUnique({
+      where: { id: paymentId },
+      include: { rentalOrder: true },
+    });
+
+    if (!payment) {
+      throw new CustomError(
+        StatusCodes.NOT_FOUND,
+        "Payment not found"
+      );
+    }
+
+    if (payment.status === PaymentStatus.COMPLETED) {
+      return payment;
+    }
+
+    const updatedPayment = await tx.payment.update({
+      where: { id: payment.id },
+      data: {
+        transactionId,
+        status: PaymentStatus.COMPLETED,
+        paidAt: new Date(),
+      },
+    });
+
+    await tx.rentalOrder.update({
+      where: { id: payment.rentalOrderId },
+      data: {
+        status: RentalStatus.PAID,
+      },
+    });
+
+    return updatedPayment;
+  });
+};
+
 const createPayment = async (
   customerId: string,
   payload: {
@@ -165,32 +206,99 @@ const confirmPayment = async (
     );
   }
 
-  return prisma.$transaction(async (tx) => {
-    const updatedPayment =
-      await tx.payment.update({
-        where: {
-          id: payment.id,
-        },
+  return finalizePayment(
+    payment.id,
+    payload.transactionId
+  );
+};
+
+const handleStripeWebhook = async (
+  signature: string,
+  payload: Buffer
+) => {
+  const stripe = getStripeClient();
+  const endpointSecret = env.STRIPE_WEBHOOK_SECRET;
+
+  if (!endpointSecret) {
+    throw new CustomError(
+      StatusCodes.SERVICE_UNAVAILABLE,
+      "Stripe webhook is not configured"
+    );
+  }
+
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(
+      payload,
+      signature,
+      endpointSecret
+    );
+  } catch (error) {
+    throw new CustomError(
+      StatusCodes.BAD_REQUEST,
+      "Invalid Stripe webhook signature"
+    );
+  }
+
+  if (
+    event.type === "checkout.session.completed"
+  ) {
+    const session = event.data.object as {
+      id?: string;
+      metadata?: Record<string, string>;
+      client_reference_id?: string;
+    };
+
+    const paymentId =
+      session.metadata?.paymentId ??
+      session.client_reference_id;
+
+    if (!paymentId) {
+      throw new CustomError(
+        StatusCodes.BAD_REQUEST,
+        "Missing payment reference in Stripe session"
+      );
+    }
+
+    await finalizePayment(
+      paymentId,
+      session.id ?? paymentId
+    );
+
+    return {
+      received: true,
+      paymentId,
+    };
+  }
+
+  if (
+    event.type === "checkout.session.expired" ||
+    event.type === "checkout.session.async_payment_failed"
+  ) {
+    const session = event.data.object as {
+      metadata?: Record<string, string>;
+      client_reference_id?: string;
+    };
+
+    const paymentId =
+      session.metadata?.paymentId ??
+      session.client_reference_id;
+
+    if (paymentId) {
+      await prisma.payment.update({
+        where: { id: paymentId },
         data: {
-          transactionId:
-            payload.transactionId,
-          status:
-            PaymentStatus.COMPLETED,
-          paidAt: new Date(),
+          status: PaymentStatus.FAILED,
         },
       });
+    }
+  }
 
-    await tx.rentalOrder.update({
-      where: {
-        id: payment.rentalOrderId,
-      },
-      data: {
-        status: RentalStatus.PAID,
-      },
-    });
-
-    return updatedPayment;
-  });
+  return {
+    received: true,
+    eventType: event.type,
+  };
 };
 
 const getMyPayments = async (
@@ -256,6 +364,7 @@ const getPaymentById = async (
 
 export const paymentService = {
   createPayment,
+  handleStripeWebhook,
   confirmPayment,
   getMyPayments,
   getPaymentById,
