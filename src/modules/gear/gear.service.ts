@@ -10,54 +10,57 @@ const createGear = async (
   payload: {
     categoryId?: string;
     category?: string;
-    name: string;
-    description: string;
-    brand: string;
-    pricePerDay: number;
-    stock: number;
+    name?: string;
+    description?: string;
+    brand?: string;
+    pricePerDay?: number;
+    stock?: number;
     imageUrl?: string;
   }
 ) => {
-  const categoryId = payload.categoryId ?? payload.category;
-  let categoryConnect;
+  const categoryInput = [payload.categoryId, payload.category].find(
+    (value): value is string => typeof value === "string" && value.trim() !== ""
+  );
 
-  if (categoryId) {
-    const category = await prisma.category.findUnique({
+  let categoryId = categoryInput?.trim();
+
+  if (!categoryId) {
+    let category = await prisma.category.findFirst({
       where: {
-        id: categoryId,
+        name: "Uncategorized",
       },
     });
 
     if (!category) {
-      throw new CustomError(
-        StatusCodes.NOT_FOUND,
-        "Category not found"
-      );
+      category = await prisma.category.create({
+        data: {
+          name: "Uncategorized",
+          description: "Default category for gear without a category",
+        },
+      });
     }
 
-    categoryConnect = {
-      category: {
-        connect: {
-          id: categoryId,
-        },
-      },
-    };
+    categoryId = category.id;
   }
 
   return prisma.gearItem.create({
     data: {
-      name: payload.name,
-      description: payload.description,
-      brand: payload.brand,
-      pricePerDay: payload.pricePerDay,
-      stockQuantity: payload.stock,
+      name: payload.name?.trim() || "Unnamed Gear",
+      description: payload.description?.trim() || null,
+      brand: payload.brand?.trim() || null,
+      pricePerDay: payload.pricePerDay ?? 0,
+      stockQuantity: payload.stock ?? 0,
       images: payload.imageUrl ? [payload.imageUrl] : [],
       provider: {
         connect: {
           id: providerId,
         },
       },
-      ...categoryConnect,
+      category: {
+        connect: {
+          id: categoryId,
+        },
+      },
     },
     include: {
       category: true,
