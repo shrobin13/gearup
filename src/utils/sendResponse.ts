@@ -5,17 +5,18 @@ type SendResponsePayload<T> = {
   success: boolean;
   message: string;
   data?: T;
-  meta?: Record<string, unknown>;
+  errors?: Array<Record<string, unknown>>;
 };
 
 const sendResponse = <T>(res: Response, payload: SendResponsePayload<T>) => {
-  const { statusCode, success, message, data, meta } = payload;
+  const { statusCode, success, message, data, errors } = payload;
 
   return res.status(statusCode).json({
+    statusCode,
     success,
     message,
     data,
-    meta,
+    ...(errors ? { errors } : {}),
   });
 };
 

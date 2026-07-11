@@ -10,8 +10,12 @@ const getProviderOrders = async (
 ) => {
   return prisma.rentalOrder.findMany({
     where: {
-      gearItem: {
-        providerId,
+      items: {
+        some: {
+          gearItem: {
+            providerId,
+          },
+        },
       },
     },
     include: {
@@ -22,8 +26,12 @@ const getProviderOrders = async (
           email: true,
         },
       },
-      gearItem: true,
-      payment: true,
+      items: {
+        include: {
+          gearItem: true,
+        },
+      },
+      payments: true,
     },
     orderBy: {
       createdAt: "desc",
@@ -42,7 +50,11 @@ const updateOrderStatus = async (
         id: orderId,
       },
       include: {
-        gearItem: true,
+        items: {
+          include: {
+            gearItem: true,
+          },
+        },
       },
     });
 
@@ -53,9 +65,9 @@ const updateOrderStatus = async (
     );
   }
 
-  if (
-    order.gearItem.providerId !== providerId
-  ) {
+  const providerItems = order?.items.some((item) => item.gearItem.providerId === providerId);
+
+  if (!providerItems) {
     throw new CustomError(
       StatusCodes.FORBIDDEN,
       "FORBIDDEN"
@@ -94,8 +106,12 @@ const updateOrderStatus = async (
     },
     include: {
       customer: true,
-      gearItem: true,
-      payment: true,
+      items: {
+        include: {
+          gearItem: true,
+        },
+      },
+      payments: true,
     },
   });
 };

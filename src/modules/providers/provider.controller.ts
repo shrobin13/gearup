@@ -8,6 +8,10 @@ import { providerOrderService } from "./provider.service.js";
 
 const getProviderOrders = catchAsync(
   async (req: Request, res: Response) => {
+    if (!req.user) {
+      throw new Error("Unauthorized");
+    }
+
     const result =
       await providerOrderService.getProviderOrders(
         req.user.id
@@ -24,9 +28,13 @@ const getProviderOrders = catchAsync(
 
 const updateOrderStatus = catchAsync(
   async (req: Request, res: Response) => {
+    if (!req.user) {
+      throw new Error("Unauthorized");
+    }
+
     const result =
       await providerOrderService.updateOrderStatus(
-        req.params.id,
+        req.params.id as string,
         req.user.id,
         req.body.status
       );

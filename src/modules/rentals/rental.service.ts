@@ -51,22 +51,24 @@ const createRental = async (
 
   const totalAmount =
     rentalDays *
-    gear.dailyRate *
+    Number(gear.pricePerDay) *
     payload.quantity;
 
   return prisma.$transaction(async (tx) => {
     const rental = await tx.rentalOrder.create({
       data: {
         customerId,
-        gearItemId: payload.gearItemId,
-        quantity: payload.quantity,
         startDate,
         endDate,
         totalAmount,
         status: RentalStatus.PLACED,
       },
       include: {
-        gearItem: true,
+        items: {
+          include: {
+            gearItem: true,
+          },
+        },
       },
     });
 
@@ -75,7 +77,7 @@ const createRental = async (
         id: payload.gearItemId,
       },
       data: {
-        stock: {
+        stockQuantity: {
           decrement: payload.quantity,
         },
       },
@@ -93,8 +95,12 @@ const getMyRentals = async (
       customerId,
     },
     include: {
-      gearItem: true,
-      payment: true,
+      items: {
+        include: {
+          gearItem: true,
+        },
+      },
+      payments: true,
     },
     orderBy: {
       createdAt: "desc",
@@ -113,8 +119,12 @@ const getRentalById = async (
         customerId,
       },
       include: {
-        gearItem: true,
-        payment: true,
+        items: {
+          include: {
+            gearItem: true,
+          },
+        },
+        payments: true,
       },
     });
 
@@ -137,6 +147,9 @@ const cancelRental = async (
       where: {
         id: rentalId,
         customerId,
+      },
+      include: {
+        items: true,
       },
     });
 
@@ -167,11 +180,11 @@ const cancelRental = async (
 
     await tx.gearItem.update({
       where: {
-        id: rental.gearItemId,
+        id: rental.items[0]?.gearItemId ?? "",
       },
       data: {
-        stock: {
-          increment: rental.quantity,
+        stockQuantity: {
+          increment: rental.items[0]?.quantity ?? 1,
         },
       },
     });
