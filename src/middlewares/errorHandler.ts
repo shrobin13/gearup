@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import { ZodError } from "zod";
 import { CustomError } from "../ExceptionHandler/CustomError.js";
 
 export const errorHandler = (
@@ -22,6 +23,18 @@ export const errorHandler = (
     return res.status(error.statusCode).json({
       success: false,
       message: error.message,
+    });
+  }
+
+  if (error instanceof ZodError) {
+    return res.status(400).json({
+      success: false,
+      message: "Validation failed",
+      errors: error.issues.map((issue) => ({
+        path: issue.path,
+        message: issue.message,
+        code: issue.code,
+      })),
     });
   }
 
