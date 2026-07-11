@@ -47,7 +47,7 @@ const getCategoryById = catchAsync(
 );
 
 const updateCategory = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, _next: NextFunction) => {
     const { id } = req.params;
 
     const result = await categoriesService.updateCategory(id as string, req.body);
@@ -62,7 +62,7 @@ const updateCategory = catchAsync(
 );
 
 const deleteCategory = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, _next: NextFunction) => {
     const { id } = req.params;
 
     const result = await categoriesService.deleteCategory(id as string);
