@@ -3,6 +3,7 @@ import { Router } from "express";
 import { gearController } from "./gear.controller.js";
 import { gearValidation } from "./gear.validation.js";
 
+import { authMiddleware } from "../../middlewares/auth.js";
 import guard from "../../middlewares/guard.js";
 import validateRequest from "../../middlewares/validateRequest.js";
 
@@ -17,6 +18,7 @@ router.get(
 
 router.post(
   "/",
+  authMiddleware,
   guard("PROVIDER"),
   validateRequest(
     gearValidation.createGearSchema
@@ -26,6 +28,7 @@ router.post(
 
 router.put(
   "/:id",
+  authMiddleware,
   guard("PROVIDER"),
   validateRequest(
     gearValidation.updateGearSchema
@@ -35,6 +38,7 @@ router.put(
 
 router.delete(
   "/:id",
+  authMiddleware,
   guard("PROVIDER"),
   gearController.deleteGear
 );

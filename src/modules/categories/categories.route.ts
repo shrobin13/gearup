@@ -3,6 +3,7 @@ import { Router } from "express";
 
 import { categoriesController } from "./categories.controller.js";
 import guard from "../../middlewares/guard.js";
+import { authMiddleware } from "../../middlewares/auth.js";
 import validateRequest from "../../middlewares/validateRequest.js";
 import { categoriesValidation } from "./categories.validation.js";
 
@@ -15,6 +16,7 @@ router.get("/:id", categoriesController.getCategoryById);
 // Admin
 router.post(
   "/",
+  authMiddleware,
   guard("ADMIN"),
   validateRequest(categoriesValidation.createCategorySchema),
   categoriesController.createCategory
@@ -22,6 +24,7 @@ router.post(
 
 router.put(
   "/:id",
+  authMiddleware,
   guard("ADMIN"),
   validateRequest(categoriesValidation.updateCategorySchema),
   categoriesController.updateCategory
@@ -29,6 +32,7 @@ router.put(
 
 router.delete(
   "/:id",
+  authMiddleware,
   guard("ADMIN"),
   categoriesController.deleteCategory
 );
