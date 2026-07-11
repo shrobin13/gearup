@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "npm install --include=dev --no-fund --no-audit && tsc",
     "start": "node dist/src/server.js",
     "seed:admin": "tsx src/seed/admin.seed.ts"
   },
