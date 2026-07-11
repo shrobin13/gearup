@@ -42,7 +42,7 @@ const updateUserStatus = async (
       id: userId,
     },
     data: {
-      status,
+      status: status as any,
     },
     select: {
       id: true,
@@ -82,8 +82,12 @@ const getAllRentals = async () => {
           email: true,
         },
       },
-      gearItem: true,
-      payment: true,
+      items: {
+        include: {
+          gearItem: true,
+        },
+      },
+      payments: true,
     },
     orderBy: {
       createdAt: "desc",

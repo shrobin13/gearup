@@ -47,7 +47,7 @@ const createGear = async (
 const getAllGear = async () => {
   return prisma.gearItem.findMany({
     where: {
-      isActive: true,
+      isAvailable: true,
     },
     include: {
       category: true,
