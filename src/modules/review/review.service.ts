@@ -29,7 +29,11 @@ const createReview = async (
     await prisma.rentalOrder.findFirst({
       where: {
         customerId,
-        gearItemId: payload.gearItemId,
+        items: {
+          some: {
+            gearItemId: payload.gearItemId,
+          },
+        },
         status: "RETURNED",
       },
     });
@@ -59,6 +63,7 @@ const createReview = async (
   return prisma.review.create({
     data: {
       customerId,
+      rentalOrderId: completedRental.id,
       gearItemId: payload.gearItemId,
       rating: payload.rating,
       comment: payload.comment,

@@ -8,6 +8,10 @@ import { catchAsync } from "../../utils/catchAsync.js";
 
 const createReview = catchAsync(
   async (req: Request, res: Response) => {
+    if (!req.user) {
+      throw new Error("Unauthorized");
+    }
+
     const result =
       await reviewService.createReview(
         req.user.id,
@@ -27,7 +31,7 @@ const getReviewsByGearId = catchAsync(
   async (req: Request, res: Response) => {
     const result =
       await reviewService.getReviewsByGearId(
-        req.params.gearId
+        req.params.gearId as string
       );
 
     sendResponse(res, {
