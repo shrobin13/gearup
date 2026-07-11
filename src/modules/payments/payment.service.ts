@@ -27,7 +27,7 @@ const createPayment = async (
   }
 
   const existingPayment =
-    await prisma.payment.findUnique({
+    await prisma.payment.findFirst({
       where: {
         rentalOrderId: rental.id,
       },
@@ -43,8 +43,10 @@ const createPayment = async (
   return prisma.payment.create({
     data: {
       rentalOrderId: rental.id,
+      customerId,
+      transactionId: "pending",
       amount: rental.totalAmount,
-      provider: payload.provider,
+      provider: payload.provider as any,
       status: PaymentStatus.PENDING,
     },
   });
@@ -134,7 +136,11 @@ const getMyPayments = async (
     include: {
       rentalOrder: {
         include: {
-          gearItem: true,
+          items: {
+            include: {
+              gearItem: true,
+            },
+          },
         },
       },
     },
@@ -159,7 +165,11 @@ const getPaymentById = async (
       include: {
         rentalOrder: {
           include: {
-            gearItem: true,
+            items: {
+              include: {
+                gearItem: true,
+              },
+            },
           },
         },
       },

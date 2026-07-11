@@ -8,6 +8,10 @@ import { catchAsync } from "../../utils/catchAsync.js";
 
 const createPayment = catchAsync(
   async (req: Request, res: Response) => {
+    if (!req.user) {
+      throw new Error("Unauthorized");
+    }
+
     const result =
       await paymentService.createPayment(
         req.user.id,
@@ -25,6 +29,10 @@ const createPayment = catchAsync(
 
 const confirmPayment = catchAsync(
   async (req: Request, res: Response) => {
+    if (!req.user) {
+      throw new Error("Unauthorized");
+    }
+
     const result =
       await paymentService.confirmPayment(
         req.user.id,
@@ -42,6 +50,10 @@ const confirmPayment = catchAsync(
 
 const getMyPayments = catchAsync(
   async (req: Request, res: Response) => {
+    if (!req.user) {
+      throw new Error("Unauthorized");
+    }
+
     const result =
       await paymentService.getMyPayments(
         req.user.id
@@ -58,9 +70,13 @@ const getMyPayments = catchAsync(
 
 const getPaymentById = catchAsync(
   async (req: Request, res: Response) => {
+    if (!req.user) {
+      throw new Error("Unauthorized");
+    }
+
     const result =
       await paymentService.getPaymentById(
-        req.params.id,
+        req.params.id as string,
         req.user.id
       );
 
